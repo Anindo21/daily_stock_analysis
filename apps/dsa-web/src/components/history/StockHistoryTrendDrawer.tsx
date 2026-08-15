@@ -12,6 +12,7 @@ import { formatDateTime } from '../../utils/format';
 import { Badge, Button, Card } from '../common';
 import { DashboardStateBlock } from '../dashboard';
 import { useUiLanguage } from '../../contexts/UiLanguageContext';
+import { useStockIndex } from '../../hooks/useStockIndex';
 import type { UiTextKey } from '../../i18n/uiText';
 
 interface StockHistoryTrendDrawerProps {
@@ -186,10 +187,24 @@ export const StockHistoryTrendDrawer: React.FC<StockHistoryTrendDrawerProps> = (
   onSelectRecord,
   onRetry,
 }) => {
-  const { t } = useUiLanguage();
+  const { language, t } = useUiLanguage();
+  const { index: stockIndex } = useStockIndex(language === 'en');
   const currentRecordId = report.meta.id;
   const [selectedRecordId, setSelectedRecordId] = useState(currentRecordId);
   const actionLabels = useMemo(() => buildDecisionActionLabelMap(t), [t]);
+  const displayStockName = useMemo(() => {
+    const storedName = report.meta.stockName || report.meta.stockCode;
+    if (language !== 'en') {
+      return storedName;
+    }
+
+    const normalizedCode = report.meta.stockCode.trim().toUpperCase();
+    const indexedStock = stockIndex.find((item) => (
+      item.market === 'US'
+      && (item.canonicalCode.toUpperCase() === normalizedCode || item.displayCode.toUpperCase() === normalizedCode)
+    ));
+    return indexedStock?.nameEn || indexedStock?.nameZh || storedName;
+  }, [language, report.meta.stockCode, report.meta.stockName, stockIndex]);
   const summary = useMemo(
     () => summarizeView(items, report, t, actionLabels, currentRecordId),
     [actionLabels, currentRecordId, items, report, t],
@@ -212,7 +227,7 @@ export const StockHistoryTrendDrawer: React.FC<StockHistoryTrendDrawerProps> = (
             <div>
               <h2 className="text-2xl font-bold text-foreground">{t('stockTrend.title')}</h2>
               <p className="mt-1 text-sm text-secondary-text">
-                {report.meta.stockName || report.meta.stockCode} · {report.meta.stockCode}
+                {displayStockName} · {report.meta.stockCode}
               </p>
             </div>
           </div>

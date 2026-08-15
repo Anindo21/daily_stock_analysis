@@ -318,6 +318,47 @@ describe('ChatPage', () => {
     expect(await screen.findByRole('button', { name: 'Stop analysis' })).toBeInTheDocument();
   });
 
+  it('renders the initial Chat workspace in English when the UI language is English', async () => {
+    window.localStorage.setItem(UI_LANGUAGE_STORAGE_KEY, 'en');
+
+    render(
+      <UiLanguageProvider>
+        <MemoryRouter initialEntries={['/chat']}>
+          <ChatPage />
+        </MemoryRouter>
+      </UiLanguageProvider>,
+    );
+
+    expect(await screen.findByRole('heading', { name: 'Ask Stock' })).toBeInTheDocument();
+    expect(screen.getByText('Context compression')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Analyze BYD trend' })).toBeInTheDocument();
+    expect(screen.queryByText('开始问股')).not.toBeInTheDocument();
+  });
+
+  it('preserves custom skill metadata when it overrides a built-in ID', async () => {
+    window.localStorage.setItem(UI_LANGUAGE_STORAGE_KEY, 'en');
+    mockGetSkills.mockResolvedValueOnce({
+      skills: [{
+        id: 'bull_trend',
+        name: 'Custom Momentum Rule',
+        description: 'Custom strategy metadata from the server.',
+        is_builtin: false,
+      }],
+      default_skill_id: 'bull_trend',
+    });
+
+    render(
+      <UiLanguageProvider>
+        <MemoryRouter initialEntries={['/chat']}>
+          <ChatPage />
+        </MemoryRouter>
+      </UiLanguageProvider>,
+    );
+
+    expect((await screen.findAllByText('Custom Momentum Rule')).length).toBeGreaterThan(0);
+    expect(screen.queryByText('Default Bull Trend')).not.toBeInTheDocument();
+  });
+
   it('shows a disabled stopping state until Codex confirms cleanup', async () => {
     mockGetStatus.mockResolvedValueOnce({
       backend: 'codex_app_server',

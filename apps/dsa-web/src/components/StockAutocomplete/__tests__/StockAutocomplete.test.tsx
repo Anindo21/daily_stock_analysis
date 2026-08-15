@@ -7,6 +7,8 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import type React from 'react';
 import { StockAutocomplete } from '../StockAutocomplete';
 import type { StockIndexItem, StockSuggestion } from '../../../types/stockIndex';
+import { UiLanguageProvider } from '../../../contexts/UiLanguageContext';
+import { UI_LANGUAGE_STORAGE_KEY } from '../../../utils/uiLanguage';
 
 let stockIndexHookImpl: () => {
   index: StockIndexItem[];
@@ -153,6 +155,37 @@ describe('StockAutocomplete', () => {
 
     const input = screen.getByPlaceholderText(/输入股票代码或名称/);
     expect(input).toBeInTheDocument();
+  });
+
+  it('renders an English stock name and badges in English UI mode', async () => {
+    window.localStorage.setItem(UI_LANGUAGE_STORAGE_KEY, 'en');
+    autocompleteHookImpl = () => ({
+      query: '600519',
+      setQuery: vi.fn(),
+      suggestions: [{ ...mockSuggestions[0], nameEn: 'Kweichow Moutai' }],
+      isOpen: true,
+      highlightedIndex: -1,
+      setHighlightedIndex: vi.fn(),
+      highlightPrevious: vi.fn(),
+      highlightNext: vi.fn(),
+      handleSelect: vi.fn(),
+      close: vi.fn(),
+      reset: vi.fn(),
+      isComposing: false,
+      setIsComposing: vi.fn(),
+      runtimeFallback: false,
+      error: null,
+    });
+
+    render(
+      <UiLanguageProvider>
+        <StockAutocomplete value="600519" onChange={mockOnChange} onSubmit={mockOnSubmit} />
+      </UiLanguageProvider>,
+    );
+
+    expect(await screen.findByText('Kweichow Moutai')).toBeInTheDocument();
+    expect(screen.getByText('China')).toBeInTheDocument();
+    expect(screen.getByText('Exact')).toBeInTheDocument();
   });
 
   it('renders a custom placeholder', () => {

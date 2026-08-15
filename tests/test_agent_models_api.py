@@ -284,6 +284,7 @@ class AgentSkillsEndpointTestCase(unittest.TestCase):
                     name="bull_trend",
                     display_name="多头趋势",
                     description="趋势跟随",
+                    source="builtin",
                     user_invocable=True,
                     default_priority=20,
                     default_active=True,
@@ -292,6 +293,7 @@ class AgentSkillsEndpointTestCase(unittest.TestCase):
                     name="chan_theory",
                     display_name="缠论",
                     description="结构分析",
+                    source="custom/chan_theory.yaml",
                     user_invocable=True,
                     default_priority=40,
                     default_active=False,
@@ -307,6 +309,8 @@ class AgentSkillsEndpointTestCase(unittest.TestCase):
 
         self.assertEqual(payload["default_skill_id"], "bull_trend")
         self.assertEqual([item["id"] for item in payload["skills"]], ["bull_trend", "chan_theory"])
+        self.assertTrue(payload["skills"][0]["is_builtin"])
+        self.assertFalse(payload["skills"][1]["is_builtin"])
 
     def test_legacy_strategies_endpoint_preserves_legacy_field_names(self) -> None:
         config = _build_config()

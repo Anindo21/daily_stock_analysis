@@ -89,6 +89,14 @@ class SkillInfo(BaseModel):
     id: str
     name: str
     description: str
+    is_builtin: bool = False
+
+
+class LegacySkillInfo(BaseModel):
+    id: str
+    name: str
+    description: str
+
 
 class SkillsResponse(BaseModel):
     skills: List[SkillInfo]
@@ -96,7 +104,7 @@ class SkillsResponse(BaseModel):
 
 
 class StrategiesResponse(BaseModel):
-    strategies: List[SkillInfo]
+    strategies: List[LegacySkillInfo]
     default_strategy_id: str = ""
 
 
@@ -168,7 +176,12 @@ def _build_skills_response(config) -> SkillsResponse:
         ),
     )
     skills = [
-        SkillInfo(id=skill.name, name=skill.display_name, description=skill.description)
+        SkillInfo(
+            id=skill.name,
+            name=skill.display_name,
+            description=skill.description,
+            is_builtin=getattr(skill, "source", None) == "builtin",
+        )
         for skill in available_skills
     ]
     return SkillsResponse(
@@ -190,7 +203,14 @@ async def get_strategies():
     """Compatibility alias for legacy clients."""
     payload = _build_skills_response(get_config())
     return StrategiesResponse(
-        strategies=payload.skills,
+        strategies=[
+            LegacySkillInfo(
+                id=skill.id,
+                name=skill.name,
+                description=skill.description,
+            )
+            for skill in payload.skills
+        ],
         default_strategy_id=payload.default_skill_id,
     )
 

@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import type React from 'react';
 import type {
   ReportDetails as ReportDetailsType,
@@ -9,6 +10,7 @@ import { formatDateTime } from '../../utils/format';
 import { getMarketPhaseSummaryLabel, getPartialBarLabel } from '../../utils/marketPhase';
 import { getReportText, normalizeReportLanguage } from '../../utils/reportLanguage';
 import { useUiLanguage } from '../../contexts/UiLanguageContext';
+import { useStockIndex } from '../../hooks/useStockIndex';
 import { ShareImageButton } from './ShareImageButton';
 
 interface ReportOverviewProps {
@@ -168,9 +170,23 @@ export const ReportOverview: React.FC<ReportOverviewProps> = ({
   details,
   watchlist,
 }) => {
-  const { t } = useUiLanguage();
+  const { language, t } = useUiLanguage();
+  const { index: stockIndex } = useStockIndex(language === 'en');
   const reportLanguage = normalizeReportLanguage(meta.reportLanguage);
   const text = getReportText(reportLanguage);
+  const displayStockName = useMemo(() => {
+    const storedName = meta.stockName || meta.stockCode;
+    if (language !== 'en') {
+      return storedName;
+    }
+
+    const normalizedCode = meta.stockCode.trim().toUpperCase();
+    const indexedStock = stockIndex.find((item) => (
+      item.market === 'US'
+      && (item.canonicalCode.toUpperCase() === normalizedCode || item.displayCode.toUpperCase() === normalizedCode)
+    ));
+    return indexedStock?.nameEn || indexedStock?.nameZh || storedName;
+  }, [language, meta.stockCode, meta.stockName, stockIndex]);
   const marketPhaseLabel = getMarketPhaseSummaryLabel(meta.marketPhaseSummary, reportLanguage);
   const partialBarLabel = meta.marketPhaseSummary?.isPartialBar === true
     ? getPartialBarLabel(reportLanguage)
@@ -255,7 +271,7 @@ export const ReportOverview: React.FC<ReportOverviewProps> = ({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-3">
                   <h2 className="text-[28px] font-bold leading-tight text-foreground">
-                    {meta.stockName || meta.stockCode}
+                    {displayStockName}
                   </h2>
                   {/* 价格和涨跌幅 */}
                   {meta.currentPrice != null && (

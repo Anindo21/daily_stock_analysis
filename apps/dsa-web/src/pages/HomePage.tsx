@@ -28,6 +28,7 @@ import { useWatchlist } from '../hooks/useWatchlist';
 import { useUiLanguage } from '../contexts/UiLanguageContext';
 import type { SetupStatusResponse } from '../types/systemConfig';
 import { normalizeReportLanguage } from '../utils/reportLanguage';
+import { ENGLISH_STRATEGY_METADATA } from '../locales/strategyText';
 import type {
   AnalyzeAsyncResponse,
   HistoryItem,
@@ -498,11 +499,15 @@ const HomePage: React.FC = () => {
       { id: '', name: t('home.defaultStrategyName'), description: t('home.defaultStrategyDescription') },
       ...analysisSkills.map((skill) => ({
         id: skill.id,
-        name: skill.name,
-        description: skill.description,
+        name: uiLanguage === 'en' && skill.is_builtin
+          ? ENGLISH_STRATEGY_METADATA[skill.id]?.name || skill.name
+          : skill.name,
+        description: uiLanguage === 'en' && skill.is_builtin
+          ? ENGLISH_STRATEGY_METADATA[skill.id]?.description || skill.description
+          : skill.description,
       })),
     ],
-    [analysisSkills, t],
+    [analysisSkills, t, uiLanguage],
   );
   const closeStrategyMenu = useCallback((restoreFocus = false) => {
     setStrategyMenuOpen(false);
